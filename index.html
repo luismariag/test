@@ -1,0 +1,249 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Product Scanner (EAN / GS1)</title>
+<script src="https://unpkg.com/@zxing/library@latest"></script>
+
+<style>
+body{
+font-family: Arial, Helvetica, sans-serif;
+background:#0f172a;
+color:white;
+text-align:center;
+margin:0;
+padding:20px;
+}
+
+h1{
+margin-bottom:10px;
+}
+
+button{
+padding:12px 20px;
+font-size:16px;
+border:none;
+border-radius:8px;
+background:#22c55e;
+color:white;
+cursor:pointer;
+margin-bottom:20px;
+}
+
+video{
+width:95%;
+max-width:420px;
+border-radius:10px;
+border:3px solid #334155;
+}
+
+.card{
+margin-top:20px;
+background:#1e293b;
+padding:18px;
+border-radius:10px;
+max-width:420px;
+margin-left:auto;
+margin-right:auto;
+text-align:left;
+}
+
+.label{
+color:#94a3b8;
+font-size:14px;
+}
+
+.value{
+font-size:16px;
+margin-bottom:8px;
+}
+
+.ai{
+margin-top:12px;
+background:#020617;
+padding:12px;
+border-radius:8px;
+font-style:italic;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🤖 AI Product Scanner</h1>
+<p>Escanea un código EAN / GS1 con tu cámara</p>
+
+<button onclick="startScanner()">Iniciar cámara</button>
+
+<br>
+
+<video id="video"></video>
+
+<div class="card" id="result">
+Esperando escaneo...
+</div>
+
+<script>
+
+const codeReader = new ZXing.BrowserBarcodeReader();
+let scanning = false;
+
+function startScanner(){
+
+if(scanning) return;
+
+scanning = true;
+
+const videoElement = document.getElementById('video');
+
+codeReader.decodeFromVideoDevice(null, videoElement, async (result, err) => {
+
+if(result){
+
+let code = result.text;
+
+document.getElementById("result").innerHTML =
+"<b>Código detectado:</b> " + code + "<br>Buscando producto..."
+
+buscarProducto(code)
+
+}
+
+});
+
+}
+
+function gs1Country(prefix){
+
+const ranges = [
+{start:0,end:19,country:"USA / Canadá"},
+{start:30,end:39,country:"USA"},
+{start:60,end:99,country:"USA / Canadá"},
+{start:380,end:380,country:"Bulgaria"},
+{start:383,end:383,country:"Eslovenia"},
+{start:385,end:385,country:"Croacia"},
+{start:400,end:440,country:"Alemania"},
+{start:450,end:459,country:"Japón"},
+{start:460,end:469,country:"Rusia"},
+{start:500,end:509,country:"Reino Unido"},
+{start:560,end:560,country:"Portugal"},
+{start:690,end:699,country:"China"},
+{start:750,end:750,country:"México"},
+{start:759,end:759,country:"Venezuela"},
+{start:770,end:771,country:"Colombia"},
+{start:773,end:773,country:"Uruguay"},
+{start:775,end:775,country:"Perú"},
+{start:777,end:777,country:"Bolivia"},
+{start:779,end:779,country:"Argentina"},
+{start:780,end:780,country:"Chile"},
+{start:789,end:790,country:"Brasil"},
+{start:800,end:839,country:"Italia"},
+{start:840,end:849,country:"España"},
+{start:890,end:890,country:"India"},
+{start:900,end:919,country:"Austria"},
+{start:930,end:939,country:"Australia"},
+]
+
+for(let r of ranges){
+
+if(prefix>=r.start && prefix<=r.end)
+return r.country
+
+}
+
+return "Desconocido"
+
+}
+
+async function buscarProducto(code){
+
+try{
+
+let prefix = parseInt(code.substring(0,3))
+
+let country = gs1Country(prefix)
+
+let url = "https://world.openfoodfacts.org/api/v0/product/" + code + ".json"
+
+let r = await fetch(url)
+
+let data = await r.json()
+
+let name = "Producto desconocido"
+let brand = "No disponible"
+let manufacturer = "No disponible"
+let category = ""
+
+if(data.status==1){
+
+let p = data.product
+
+name = p.product_name || name
+brand = p.brands || brand
+manufacturer = p.manufacturing_places || manufacturer
+category = p.categories || ""
+
+}
+
+let aiDescription = generarDescripcion(name,brand,country,category)
+
+document.getElementById("result").innerHTML = `
+
+<div class="label">Producto</div>
+<div class="value">${name}</div>
+
+<div class="label">Marca</div>
+<div class="value">${brand}</div>
+
+<div class="label">Fabricante</div>
+<div class="value">${manufacturer}</div>
+
+<div class="label">Prefijo GS1</div>
+<div class="value">${prefix}</div>
+
+<div class="label">Registro GS1</div>
+<div class="value">${country}</div>
+
+<div class="ai">
+${aiDescription}
+</div>
+
+`
+
+}catch(e){
+
+document.getElementById("result").innerHTML =
+"Error consultando base de datos"
+
+}
+
+}
+
+function generarDescripcion(name,brand,country,category){
+
+let text = "La IA interpreta que este producto"
+
+if(name!="Producto desconocido")
+text += " se denomina " + name
+
+if(brand!="No disponible")
+text += ", pertenece a la marca " + brand
+
+if(country!="Desconocido")
+text += ", y su prefijo GS1 indica registro en " + country
+
+if(category!="")
+text += ". Categoría detectada: " + category
+
+text += "."
+
+return text
+
+}
+
+</script>
+
+</body>
+</html>
