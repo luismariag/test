@@ -1,16 +1,19 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Product Scanner (EAN / GS1)</title>
+
+<title>AI Smart Product Scanner</title>
+
 <script src="https://unpkg.com/@zxing/library@latest"></script>
 
 <style>
+
 body{
 font-family: Arial, Helvetica, sans-serif;
-background:#0f172a;
+background: linear-gradient(135deg,#0f172a,#020617);
 color:white;
 text-align:center;
 margin:0;
@@ -18,46 +21,53 @@ padding:20px;
 }
 
 h1{
-margin-bottom:10px;
+margin-top:10px;
 }
 
 button{
 padding:12px 20px;
 font-size:16px;
 border:none;
-border-radius:8px;
+border-radius:10px;
 background:#22c55e;
 color:white;
 cursor:pointer;
-margin-bottom:20px;
+margin:10px;
+}
+
+button:hover{
+background:#16a34a;
 }
 
 video{
 width:95%;
 max-width:420px;
-border-radius:10px;
+border-radius:12px;
 border:3px solid #334155;
+margin-top:10px;
 }
 
 .card{
 margin-top:20px;
 background:#1e293b;
 padding:18px;
-border-radius:10px;
+border-radius:12px;
 max-width:420px;
 margin-left:auto;
 margin-right:auto;
 text-align:left;
+box-shadow:0 0 20px rgba(0,0,0,0.4);
 }
 
 .label{
 color:#94a3b8;
-font-size:14px;
+font-size:13px;
+margin-top:6px;
 }
 
 .value{
 font-size:16px;
-margin-bottom:8px;
+margin-bottom:6px;
 }
 
 .ai{
@@ -67,17 +77,22 @@ padding:12px;
 border-radius:8px;
 font-style:italic;
 }
+
+.voice{
+margin-top:10px;
+background:#0ea5e9;
+}
+
 </style>
+
 </head>
 
 <body>
 
-<h1>🤖 AI Product Scanner</h1>
-<p>Escanea un código EAN / GS1 con tu cámara</p>
+<h1>🤖 AI Smart Product Scanner</h1>
+<p>Escanea un código EAN / GS1 y la app identificará el producto y lo leerá en voz alta</p>
 
-<button onclick="startScanner()">Iniciar cámara</button>
-
-<br>
+<button onclick="startScanner()">📷 Iniciar cámara</button>
 
 <video id="video"></video>
 
@@ -118,6 +133,7 @@ buscarProducto(code)
 function gs1Country(prefix){
 
 const ranges = [
+
 {start:0,end:19,country:"USA / Canadá"},
 {start:30,end:39,country:"USA"},
 {start:60,end:99,country:"USA / Canadá"},
@@ -143,7 +159,8 @@ const ranges = [
 {start:840,end:849,country:"España"},
 {start:890,end:890,country:"India"},
 {start:900,end:919,country:"Austria"},
-{start:930,end:939,country:"Australia"},
+{start:930,end:939,country:"Australia"}
+
 ]
 
 for(let r of ranges){
@@ -206,11 +223,13 @@ document.getElementById("result").innerHTML = `
 <div class="label">Registro GS1</div>
 <div class="value">${country}</div>
 
-<div class="ai">
-${aiDescription}
-</div>
+<div class="ai">${aiDescription}</div>
+
+<button class="voice" onclick="hablar('${name}')">🔊 Escuchar producto</button>
 
 `
+
+hablar(name)
 
 }catch(e){
 
@@ -223,7 +242,7 @@ document.getElementById("result").innerHTML =
 
 function generarDescripcion(name,brand,country,category){
 
-let text = "La IA interpreta que este producto"
+let text = "La inteligencia artificial interpreta que este producto"
 
 if(name!="Producto desconocido")
 text += " se denomina " + name
@@ -243,7 +262,19 @@ return text
 
 }
 
+function hablar(texto){
+
+const msg = new SpeechSynthesisUtterance()
+
+msg.text = texto
+msg.lang = "es-ES"
+
+speechSynthesis.speak(msg)
+
+}
+
 </script>
 
 </body>
+
 </html>
